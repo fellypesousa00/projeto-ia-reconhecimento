@@ -1,7 +1,20 @@
 import streamlit as st
 import cv2
-import mediapipe as mp
 import numpy as np
+
+# Nova forma de importar o MediaPipe para evitar o erro de 'solutions'
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
+
+# SE O ERRO PERSISTIR, use esta alternativa clássica que o Render aceita:
+try:
+    import mediapipe.python.solutions.holistic as mp_holistic
+    import mediapipe.python.solutions.drawing_utils as mp_drawing
+except ImportError:
+    # Fallback para compatibilidade de versões
+    mp_holistic = mp.solutions.holistic
+    mp_drawing = mp.solutions.drawing_utils
 
 # Configuração da página do Streamlit (Interface)
 st.set_page_config(
@@ -22,10 +35,6 @@ st.markdown("""
 st.title("🤖 IA de Rastreamento de Movimentos e Expressões")
 st.write("Esta inteligência artificial analisa expressões faciais, mãos e postura corporal em tempo real.")
 
-# Inicializando o MediaPipe Holistic (engloba rosto, mãos e corpo)
-mp_holistic = mp.solutions.holistic
-mp_drawing = mp.solutions.drawing_utils
-
 # Sidebar para configurações
 st.sidebar.header("⚙️ Configurações da IA")
 detection_confidence = st.sidebar.slider("Confiança Mínima de Detecção", 0.0, 1.0, 0.5)
@@ -40,7 +49,7 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("📹 Feed de Vídeo com IA Ativa")
-    FRAME_WINDOW = st.image([]) # Janela onde o vídeo atualizado vai aparecer
+    FRAME_WINDOW = st.image([]) 
 
 with col2:
     st.subheader("📊 Status das Reações")
@@ -50,14 +59,13 @@ with col2:
 # Botão para iniciar/parar
 run = st.checkbox('Ativar Câmera/Processamento')
 
-# Inicializa o modelo Holistic do MediaPipe
+# Inicializa o modelo Holistic usando o bloco try/except que configuramos no topo
 with mp_holistic.Holistic(
     min_detection_confidence=detection_confidence,
     min_tracking_confidence=tracking_confidence
 ) as holistic:
 
     if run:
-        # Se for local, usa a webcam (0). Nota sobre o Render abaixo.
         cap = cv2.VideoCapture(0)
         status_placeholder.success("IA conectada com sucesso!")
 
@@ -67,16 +75,12 @@ with mp_holistic.Holistic(
                 st.write("Não foi possível acessar a câmera.")
                 break
 
-            # Inverte horizontalmente para efeito de espelho e muda BGR para RGB
             frame = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
             frame.flags.writeable = False
             
-            # Processa o frame com a IA
             results = holistic.process(frame)
-            
             frame.flags.writeable = True
             
-            # Desenha os pontos de rastreamento no frame
             # 1. Rosto (Expressões)
             if results.face_landmarks:
                 mp_drawing.draw_landmarks(
@@ -85,7 +89,7 @@ with mp_holistic.Holistic(
                     mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
                 )
             
-            # 2. Postura (Movimentação do corpo)
+            # 2. Postura (Corpo)
             if results.pose_landmarks:
                 mp_drawing.draw_landmarks(
                     frame, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
@@ -93,16 +97,14 @@ with mp_holistic.Holistic(
                     mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
                 )
 
-            # 3. Mãos (Esquerda e Direita)
+            # 3. Mãos
             if results.left_hand_landmarks:
                 mp_drawing.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
             if results.right_hand_landmarks:
                 mp_drawing.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
 
-            # Atualiza o frame na interface do Streamlit
             FRAME_WINDOW.image(frame)
             
-            # Lógica simples de exibição de dados na barra lateral
             if results.face_landmarks:
                 status_placeholder.metric(label="Rosto Detectado", value="Ativo", delta="Analisando Expressões")
             else:
