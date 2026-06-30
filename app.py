@@ -1,20 +1,7 @@
 import streamlit as st
 import cv2
-import numpy as np
-
-# Nova forma de importar o MediaPipe para evitar o erro de 'solutions'
 import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
-
-# SE O ERRO PERSISTIR, use esta alternativa clássica que o Render aceita:
-try:
-    import mediapipe.python.solutions.holistic as mp_holistic
-    import mediapipe.python.solutions.drawing_utils as mp_drawing
-except ImportError:
-    # Fallback para compatibilidade de versões
-    mp_holistic = mp.solutions.holistic
-    mp_drawing = mp.solutions.drawing_utils
+import numpy as np
 
 # Configuração da página do Streamlit (Interface)
 st.set_page_config(
@@ -34,6 +21,10 @@ st.markdown("""
 
 st.title("🤖 IA de Rastreamento de Movimentos e Expressões")
 st.write("Esta inteligência artificial analisa expressões faciais, mãos e postura corporal em tempo real.")
+
+# Inicializando o MediaPipe Clássico
+mp_holistic = mp.solutions.holistic
+mp_drawing = mp.solutions.drawing_utils
 
 # Sidebar para configurações
 st.sidebar.header("⚙️ Configurações da IA")
@@ -59,7 +50,7 @@ with col2:
 # Botão para iniciar/parar
 run = st.checkbox('Ativar Câmera/Processamento')
 
-# Inicializa o modelo Holistic usando o bloco try/except que configuramos no topo
+# Inicializa o modelo Holistic do MediaPipe
 with mp_holistic.Holistic(
     min_detection_confidence=detection_confidence,
     min_tracking_confidence=tracking_confidence
