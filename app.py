@@ -1,4 +1,4 @@
-import streamlit as tf
+import streamlit as st
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização CSS para deixar a interface moderna
+# Estilização CSS para garantir o visual Dark Neon moderno
 st.markdown("""
     <style>
     .main { background-color: #0f172a; color: #f8fafc; }
